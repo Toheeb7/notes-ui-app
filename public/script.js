@@ -1,32 +1,49 @@
-// Load all notes when page loads
-document.addEventListener("DOMContentLoaded", loadNotes);
+const notesContainer = document.getElementById("notesContainer");
+const noteInput = document.getElementById("noteInput");
+const addNoteBtn = document.getElementById("addNoteBtn");
 
-// Add note
-document.getElementById("addNote").addEventListener("click", async () => {
-  const titleInput = document.getElementById("title");
-  const contentInput = document.getElementById("content");
+// Load all notes from the server
+async function loadNotes() {
+  try {
+    const res = await fetch("/api/notes");
+    const notes = await res.json();
 
-  const title = titleInput.value.trim();
-  const content = contentInput.value.trim();
+    notesContainer.innerHTML = "";
 
-  if (!title || !content) {
-    alert("Please fill in both fields!");
-    return;
+    notes.forEach((note, index) => {
+      const noteDiv = document.createElement("div");
+      noteDiv.classList.add("note");
+
+      noteDiv.innerHTML = `
+        <p>${note}</p>
+        <div class="buttons">
+          <button class="edit-btn" onclick="editNote(${index})">Edit</button>
+          <button class="delete-btn" onclick="deleteNote(${index})">Delete</button>
+        </div>
+      `;
+
+      notesContainer.appendChild(noteDiv);
+    });
+  } catch (err) {
+    console.error("Error loading notes:", err);
   }
+}
 
-  const newNote = { title, content };
+// Add a new note
+addNoteBtn.addEventListener("click", async () => {
+  const newNote = noteInput.value.trim();
+  if (!newNote) return alert("Please enter a note!");
 
   try {
-    const response = await fetch("/notes", {
+    const res = await fetch("/api/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newNote),
+      body: JSON.stringify({ text: newNote }),
     });
 
-    if (!response.ok) throw new Error("Failed to add note");
+    if (!res.ok) throw new Error("Failed to add note");
 
-    titleInput.value = "";
-    contentInput.value = "";
+    noteInput.value = "";
     loadNotes();
   } catch (err) {
     console.error(err);
@@ -34,45 +51,32 @@ document.getElementById("addNote").addEventListener("click", async () => {
   }
 });
 
-// Fetch and display all notes
-async function loadNotes() {
+// Edit a note
+async function editNote(index) {
+  const newText = prompt("Enter new text for your note:");
+  if (!newText) return;
+
   try {
-    const res = await fetch("/notes");
-    if (!res.ok) throw new Error("Failed to load notes");
-    const notes = await res.json();
-
-    const container = document.getElementById("notesContainer");
-    container.innerHTML = "";
-
-    if (notes.length === 0) {
-      container.innerHTML = "<p class='empty'>No notes yet. Add one!</p>";
-      return;
-    }
-
-    notes.forEach((note, index) => {
-      const card = document.createElement("div");
-      card.classList.add("note-card");
-
-      card.innerHTML = `
-        <h3>${note.title}</h3>
-        <p>${note.content}</p>
-        <div class="actions">
-          <button class="edit-btn" onclick="editNote(${index})">Edit</button>
-          <button class="delete-btn" onclick="deleteNote(${index})">Delete</button>
-        </div>
-      `;
-      container.appendChild(card);
+    const res = await fetch(`/api/notes/${index}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: newText }),
     });
+
+    if (!res.ok) throw new Error("Failed to update note");
+
+    loadNotes();
   } catch (err) {
     console.error(err);
+    alert("Error editing note!");
   }
 }
 
-// Delete note
+// Delete a note
 async function deleteNote(index) {
   try {
-    const res = await fetch(`/notes/${index}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete");
+    const res = await fetch(`/api/notes/${index}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete note");
     loadNotes();
   } catch (err) {
     console.error(err);
@@ -80,24 +84,5 @@ async function deleteNote(index) {
   }
 }
 
-// Edit note
-async function editNote(index) {
-  const title = prompt("Enter new title:");
-  const content = prompt("Enter new content:");
-  if (!title || !content) return;
-
-  const updatedNote = { title, content };
-
-  try {
-    const res = await fetch(`/notes/${index}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedNote),
-    });
-    if (!res.ok) throw new Error("Failed to update");
-    loadNotes();
-  } catch (err) {
-    console.error(err);
-    alert("Error editing note!");
-  }
-}
+// Load notes when the page opens
+loadNotes();

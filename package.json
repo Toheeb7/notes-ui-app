@@ -1,12 +1,13 @@
 {
-  "name": "notes-ui-app",
+  "name": "notes-app",
   "version": "1.0.0",
+  "description": "Simple Notes App with frontend and Vercel API backend",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vercel dev",
+    "start": "vercel dev"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  }
 }
