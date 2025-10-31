@@ -1,60 +1,49 @@
-import fs from "fs";
-import path from "path";
+// api/notes.js
 
-const filePath = path.resolve("data.json");
+let notes = [];
 
-export default function handler(req, res) {
-  // Read notes from JSON file
-  const getNotes = () => {
-    if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "[]");
-    const data = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(data);
-  };
+export default async function handler(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const indexParam = url.searchParams.get('index');
+  const index = indexParam ? parseInt(indexParam) : null;
 
-  // Save notes to JSON file
-  const saveNotes = (notes) => {
-    fs.writeFileSync(filePath, JSON.stringify(notes, null, 2));
-  };
-
-  if (req.method === "GET") {
-    const notes = getNotes();
+  if (req.method === 'GET') {
     res.status(200).json(notes);
+  }
 
-  } else if (req.method === "POST") {
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ error: "Text required" });
+  else if (req.method === 'POST') {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    const note = JSON.parse(body || '{}');
+    if (!note.title || !note.content) {
+      return res.status(400).json({ error: 'Title and content required' });
+    }
+    notes.push(note);
+    res.status(201).json({ message: 'Note added' });
+  }
 
-    const notes = getNotes();
-    notes.push(text);
-    saveNotes(notes);
-    res.status(201).json({ message: "Note added" });
-
-  } else if (req.method === "PUT") {
-    const { text } = req.body;
-    const index = parseInt(req.query.index);
-    if (isNaN(index)) return res.status(400).json({ error: "Invalid index" });
-
-    const notes = getNotes();
-    if (index < 0 || index >= notes.length)
-      return res.status(404).json({ error: "Note not found" });
-
-    notes[index] = text;
-    saveNotes(notes);
-    res.status(200).json({ message: "Note updated" });
-
-  } else if (req.method === "DELETE") {
-    const index = parseInt(req.query.index);
-    if (isNaN(index)) return res.status(400).json({ error: "Invalid index" });
-
-    const notes = getNotes();
-    if (index < 0 || index >= notes.length)
-      return res.status(404).json({ error: "Note not found" });
-
+  else if (req.method === 'DELETE') {
+    if (index === null || index < 0 || index >= notes.length) {
+      return res.status(400).json({ error: 'Invalid index' });
+    }
     notes.splice(index, 1);
-    saveNotes(notes);
-    res.status(200).json({ message: "Note deleted" });
+    res.status(200).json({ message: 'Note deleted' });
+  }
 
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
+  else if (req.method === 'PUT') {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    const updatedNote = JSON.parse(body || '{}');
+
+    if (index === null || index < 0 || index >= notes.length) {
+      return res.status(400).json({ error: 'Invalid index' });
+    }
+    notes[index] = updatedNote;
+    res.status(200).json({ message: 'Note updated' });
+  }
+
+  else {
+    res.setHeader('Allow', ['GET', 'POST', 'DELETE', 'PUT']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

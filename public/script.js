@@ -1,88 +1,85 @@
-const notesContainer = document.getElementById("notesContainer");
-const noteInput = document.getElementById("noteInput");
-const addNoteBtn = document.getElementById("addNoteBtn");
-
-// Load all notes from the server
 async function loadNotes() {
   try {
-    const res = await fetch("/api/notes");
+    const res = await fetch('/api/notes');
     const notes = await res.json();
 
-    notesContainer.innerHTML = "";
+    const container = document.getElementById('notes-container');
+    container.innerHTML = '';
 
     notes.forEach((note, index) => {
-      const noteDiv = document.createElement("div");
-      noteDiv.classList.add("note");
-
+      const noteDiv = document.createElement('div');
+      noteDiv.classList.add('note');
       noteDiv.innerHTML = `
-        <p>${note}</p>
+        <h3>${note.title}</h3>
+        <p>${note.content}</p>
         <div class="buttons">
-          <button class="edit-btn" onclick="editNote(${index})">Edit</button>
-          <button class="delete-btn" onclick="deleteNote(${index})">Delete</button>
+          <button onclick="editNote(${index})">✏️ Edit</button>
+          <button onclick="deleteNote(${index})">🗑️ Delete</button>
         </div>
       `;
-
-      notesContainer.appendChild(noteDiv);
+      container.appendChild(noteDiv);
     });
   } catch (err) {
-    console.error("Error loading notes:", err);
+    console.error('Error loading notes:', err);
   }
 }
 
-// Add a new note
-addNoteBtn.addEventListener("click", async () => {
-  const newNote = noteInput.value.trim();
-  if (!newNote) return alert("Please enter a note!");
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const title = document.getElementById('title').value.trim();
+  const content = document.getElementById('content').value.trim();
+
+  if (!title || !content) {
+    alert('Please enter both title and content.');
+    return;
+  }
 
   try {
-    const res = await fetch("/api/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: newNote }),
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content }),
     });
 
-    if (!res.ok) throw new Error("Failed to add note");
+    if (!res.ok) throw new Error('Failed to add note');
 
-    noteInput.value = "";
+    document.getElementById('title').value = '';
+    document.getElementById('content').value = '';
     loadNotes();
   } catch (err) {
     console.error(err);
-    alert("Error adding note!");
+    alert('Error adding note!');
   }
 });
 
-// Edit a note
-async function editNote(index) {
-  const newText = prompt("Enter new text for your note:");
-  if (!newText) return;
-
-  try {
-    const res = await fetch(`/api/notes/${index}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: newText }),
-    });
-
-    if (!res.ok) throw new Error("Failed to update note");
-
-    loadNotes();
-  } catch (err) {
-    console.error(err);
-    alert("Error editing note!");
-  }
-}
-
-// Delete a note
 async function deleteNote(index) {
   try {
-    const res = await fetch(`/api/notes/${index}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete note");
+    const res = await fetch(`/api/notes?index=${index}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete');
     loadNotes();
   } catch (err) {
     console.error(err);
-    alert("Error deleting note!");
+    alert('Error deleting note!');
   }
 }
 
-// Load notes when the page opens
+async function editNote(index) {
+  const title = prompt('Enter new title:');
+  const content = prompt('Enter new content:');
+  if (!title || !content) return;
+
+  try {
+    const res = await fetch(`/api/notes?index=${index}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content }),
+    });
+
+    if (!res.ok) throw new Error('Failed to update');
+    loadNotes();
+  } catch (err) {
+    console.error(err);
+    alert('Error editing note!');
+  }
+}
+
 loadNotes();

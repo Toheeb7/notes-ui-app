@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notes App</title>
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
-    <h1>📝 My Notes</h1>
+    <h1>📝 Notes App</h1>
 
-    <div class="input-group">
-      <input type="text" id="noteInput" placeholder="Write a note..." />
-      <button id="addNoteBtn">Add</button>
+    <div class="note-input">
+      <input id="title" type="text" placeholder="Note title..." />
+      <textarea id="content" placeholder="Write your note..."></textarea>
+      <button id="addBtn">Add Note</button>
     </div>
 
-    <div id="notesContainer"></div>
+    <div id="notes-container" class="notes-container"></div>
   </div>
 
   <script src="script.js"></script>
